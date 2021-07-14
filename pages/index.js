@@ -5,6 +5,13 @@ import Box from '../src/components/Box'
 import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from '../src/components/lib/AlurakutCommons'
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations'
 
+const { SiteClient } = require("datocms-client");
+const client = new SiteClient("1637f836ad8453152c79e2c00729ab");
+
+async function getFilteredRecords() {
+  const records = await client.items.all()
+}
+
 function ProfileSidebar(props) {
   return (
     <Box>
@@ -50,12 +57,7 @@ function RelationItem(props) {
 export default function Home() {
   React.useState();
   const githubUser = 'GregorioFornetti'
-  const [comunidades, setComunidades] = React.useState([{
-    "id": new Date().toISOString(),
-    "link": 'https://www.alura.com.br/',
-    "title": 'Alurakut',
-    'image': 'https://www.alura.com.br/assets/img/alura-share.1617727198.png'
-  }])
+  const [comunidades, setComunidades] = React.useState([])
   const friends = [
     'peas',
     'juunegreiros',
@@ -65,6 +67,28 @@ export default function Home() {
     'steppat',
     'GregorioFornetti'
   ]
+  const [seguidores, setSeguidores] = React.useState([])
+
+  React.useEffect(() => {
+    fetch(`https://api.github.com/users/peas/followers`)
+      .then((response) => response.json())
+      .then((data) => { setSeguidores(data) })
+  }, [])
+
+  React.useEffect(() => {
+    client.items.all({ filter: {id: 'community'} })
+    .then((data) => {
+      setComunidades(data.map((item) => {
+        return {
+          'id' : item.id,
+          'link': item.pageUrl,
+          'title': item.title,
+          'image': item.imageUrl
+        }
+      }))
+    })
+  }, [])
+
   return (
     <>
       <AlurakutMenu githubUser={githubUser} />
@@ -89,6 +113,13 @@ export default function Home() {
                 'title': dados.get('title'),
                 'image': dados.get('image')
               }])
+              client.items.create({
+                itemType: '967633',
+                title: dados.get('title'),
+                imageUrl: dados.get('image'),
+                pageUrl: dados.get('link')
+              })
+              .then((response) => console.log(response))
             }}>
               <div>
                 <input
@@ -127,14 +158,21 @@ export default function Home() {
               return <RelationItem key={itemAtual} link={`/users/${itemAtual}`}
                image={`https://github.com/${itemAtual}.png`} title={itemAtual}/>
             })
-          }}/>
+          }} />
 
           <ProfileRelationsBox title={`Comunidades (${comunidades.length})`} createItens={() => {
             return comunidades.slice(0, 6).map((itemAtual) => {
               return <RelationItem key={itemAtual.title} link={itemAtual.link}
                image={itemAtual.image} title={itemAtual.title}/>
             })
-          }}/>
+          }} />
+
+          <ProfileRelationsBox title={`Seguidores (${seguidores.length})`} createItens={() => {
+            return seguidores.slice(0, 6).map((itemAtual) => {
+              return <RelationItem key={itemAtual.id} link={`https://github.com/${itemAtual.login}`} 
+                image={itemAtual.avatar_url} title={itemAtual.login}/>
+            })
+          }} />
         </div>
       </MainGrid>
     </>
