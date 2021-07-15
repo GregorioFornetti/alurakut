@@ -5,13 +5,6 @@ import Box from '../src/components/Box'
 import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from '../src/components/lib/AlurakutCommons'
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations'
 
-const { SiteClient } = require("datocms-client");
-const client = new SiteClient("1637f836ad8453152c79e2c00729ab");
-
-async function getFilteredRecords() {
-  const records = await client.items.all()
-}
-
 function ProfileSidebar(props) {
   return (
     <Box>
@@ -76,17 +69,9 @@ export default function Home() {
   }, [])
 
   React.useEffect(() => {
-    client.items.all({ filter: {id: 'community'} })
-    .then((data) => {
-      setComunidades(data.map((item) => {
-        return {
-          'id' : item.id,
-          'link': item.pageUrl,
-          'title': item.title,
-          'image': item.imageUrl
-        }
-      }))
-    })
+    fetch('/api/comunidades')
+    .then((response) => response.json())
+    .then((data) => { setComunidades(data) })
   }, [])
 
   return (
@@ -113,6 +98,22 @@ export default function Home() {
                 'title': dados.get('title'),
                 'image': dados.get('image')
               }])
+              fetch('/api/cadastro_comunidades', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  'title': dados.get('title'),
+                  'imageUrl':dados.get('image'),
+                  'pageUrl':dados.get('link')
+                })
+              })
+              .then(async (response) => {
+                const dados = response.json()
+                console.log(dados)
+              })
+              /*
               client.items.create({
                 itemType: '967633',
                 title: dados.get('title'),
@@ -120,6 +121,7 @@ export default function Home() {
                 pageUrl: dados.get('link')
               })
               .then((response) => console.log(response))
+              */
             }}>
               <div>
                 <input
