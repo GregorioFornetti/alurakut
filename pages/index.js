@@ -1,7 +1,9 @@
 import React from 'react'
+import nookies from 'nookies'
 import styled from 'styled-components'
 import MainGrid from '../src/components/MainGrid'
 import Box from '../src/components/Box'
+import jwt from 'jsonwebtoken'
 import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from '../src/components/lib/AlurakutCommons'
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations'
 
@@ -47,9 +49,11 @@ function RelationItem(props) {
   )
 }
 
-export default function Home() {
+export default function Home(props) {
+
+  const router = useRouter();
   React.useState();
-  const githubUser = 'GregorioFornetti'
+  const githubUser = props.githubUser
   const [comunidades, setComunidades] = React.useState([])
   const friends = [
     'peas',
@@ -63,7 +67,7 @@ export default function Home() {
   const [seguidores, setSeguidores] = React.useState([])
 
   React.useEffect(() => {
-    fetch(`https://api.github.com/users/peas/followers`)
+    fetch(`https://api.github.com/users/${githubUser}/followers`)
       .then((response) => response.json())
       .then((data) => { setSeguidores(data) })
   }, [])
@@ -113,15 +117,6 @@ export default function Home() {
                 const dados = response.json()
                 console.log(dados)
               })
-              /*
-              client.items.create({
-                itemType: '967633',
-                title: dados.get('title'),
-                imageUrl: dados.get('image'),
-                pageUrl: dados.get('link')
-              })
-              .then((response) => console.log(response))
-              */
             }}>
               <div>
                 <input
@@ -179,4 +174,31 @@ export default function Home() {
       </MainGrid>
     </>
   )
+}
+
+export async function getServerSideProps(context) {
+
+  const token = nookies.get(context).USER_TOKEN
+  const { isAuthenticated } = await fetch('https://alurakut.vercel.app/api/auth', {
+    headers: {
+      Authorization: token
+    }
+  })
+  .then((response) => response.json())
+
+  console.log(isAuthenticated)
+  if (!isAuthenticated) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      }
+    }
+  }
+
+  return {
+    props: {
+      githubUser: jwt.decode(token).githubUser
+    }
+  }
 }
